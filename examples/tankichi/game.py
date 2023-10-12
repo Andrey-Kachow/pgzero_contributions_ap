@@ -68,11 +68,18 @@ for row in range(tile_rows):
 player = PlayerTank(40, 40, Actor('tank'))
 
 
-state_keymap = {
+direction_keymap = {
     keys.W: AbstractTank.UP,
     keys.A: AbstractTank.LEFT,
     keys.S: AbstractTank.DOWN,
     keys.D: AbstractTank.RIGHT
+}
+
+direction_keymap_flags = {
+    keys.W: False,
+    keys.A: False,
+    keys.S: False,
+    keys.D: False 
 }
 
 
@@ -98,19 +105,21 @@ def update():
 
 
 def on_key_down(key):
-    if key == keys.A:
-        player.direction = AbstractTank.LEFT
-    elif key == keys.D:
-        player.direction = AbstractTank.RIGHT
-    elif key == keys.W:
-        player.direction = AbstractTank.UP
-    elif key == keys.S:
-        player.direction = AbstractTank.DOWN
-    else:
+    if key not in direction_keymap:
         return
+    direction_keymap_flags[key] = True
+    player.direction = direction_keymap[key]
     player.state = AbstractTank.MOVING
 
 def on_key_up(key):
-    if state_keymap[key] == player.state:
-        player.state = AbstractTank.IDLE
+    if key not in direction_keymap:
+        return
+    direction_keymap_flags[key] = False
+    if player.direction == direction_keymap[key]:
+        for key_press, is_pressed in direction_keymap_flags.items():
+            if is_pressed:
+                player.direction = direction_keymap[key_press]
+                break
+        else:
+            player.state = AbstractTank.IDLE
 

@@ -17,12 +17,14 @@ def generate_tile_draw_func():
     return options[selected_option_index]
 
 
-class AbstractTank:
-
+class Directions:
     RIGHT = 0
     UP = 1
     LEFT = 2
     DOWN = 3
+    
+
+class AbstractTank:
 
     IDLE = 4
     MOVING = 5
@@ -32,7 +34,7 @@ class AbstractTank:
 
     def __init__(self, x, y, actor):
         self.speed = AbstractTank.REGULAR_SPEED
-        self.direction = AbstractTank.UP
+        self.direction = Directions.UP
         self.state = AbstractTank.IDLE
         self.actor = actor
         actor.top_left = x, y
@@ -40,10 +42,35 @@ class AbstractTank:
     def draw(self):
         self.actor.draw()
 
+    def shoot(self):
+        spawn_points = {
+            Directions.UP: self.actor.midtop,
+            Directions.DOWN: self.actor.midbottom,
+            Directions.LEFT: self.actor.midleft,
+            Directions.RIGHT: self.actor.midright
+        }
+        x, y = spawn_points[self.direction]
+        bullet = Bullet(x, y, self.direction)
+        bullets.append(bullet)
+
 
 class PlayerTank(AbstractTank):
     pass
 
+
+class Bullet:
+    RADIUS = 4
+    SPEED = 5
+
+    def __init__(self, x, y, direction):
+        self.x = x
+        self.y = y
+        self.direction = direction
+        self.speed = Bullet.SPEED
+
+    def draw(self):
+        x, y, r = self.x, self.y, Bullet.RADIUS
+        screen.draw.filled_rect(Rect((x - r, y - r), (2 * r + 1, 2 * r + 1)), color=(255, 0, 0) )
 
 
 WIDTH = 500
@@ -64,15 +91,15 @@ for row in range(tile_rows):
     tilemap.append(row_tiles)
 
 
-
 player = PlayerTank(40, 40, Actor('tank'))
+bullets = []
 
 
 direction_keymap = {
-    keys.W: AbstractTank.UP,
-    keys.A: AbstractTank.LEFT,
-    keys.S: AbstractTank.DOWN,
-    keys.D: AbstractTank.RIGHT
+    keys.W: Directions.UP,
+    keys.A: Directions.LEFT,
+    keys.S: Directions.DOWN,
+    keys.D: Directions.RIGHT
 }
 
 direction_keymap_flags = {
@@ -83,25 +110,42 @@ direction_keymap_flags = {
 }
 
 
-
 def draw():
     for i, y in enumerate(range(0, HEIGHT, tile_size)):
         for j, x in enumerate(range(0, WIDTH, tile_size)):
             tilemap[i][j](x, y)
 
     player.draw()
+    for bullet in bullets:
+        bullet.draw()
+
+
+def update_player():
+    if player.state == AbstractTank.MOVING:
+        if player.direction == Directions.UP:
+            player.actor.top -= player.speed
+        elif player.direction == Directions.DOWN:
+            player.actor.top += player.speed
+        elif player.direction == Directions.LEFT:
+            player.actor.right -= player.speed
+        elif player.direction == Directions.RIGHT:
+            player.actor.right += player.speed
+
+def update_bullet(bullet):
+    if bullet.direction == Directions.UP:
+        bullet.y -= bullet.speed
+    elif bullet.direction == Directions.DOWN:
+        bullet.y += bullet.speed
+    elif bullet.direction == Directions.LEFT:
+        bullet.x -= bullet.speed
+    elif bullet.direction == Directions.RIGHT:
+        bullet.x += bullet.speed
 
 
 def update():
-    if player.state == AbstractTank.MOVING:
-        if player.direction == AbstractTank.UP:
-            player.actor.top -= player.speed
-        elif player.direction == AbstractTank.DOWN:
-            player.actor.top += player.speed
-        elif player.direction == AbstractTank.LEFT:
-            player.actor.right -= player.speed
-        elif player.direction == AbstractTank.RIGHT:
-            player.actor.right += player.speed
+    update_player()
+    for bullet in bullets:
+        update_bullet(bullet)
 
 
 def on_key_down(key):
@@ -112,6 +156,8 @@ def on_key_down(key):
     player.state = AbstractTank.MOVING
 
 def on_key_up(key):
+    if key == keys.SPACE:
+        player.shoot()
     if key not in direction_keymap:
         return
     direction_keymap_flags[key] = False

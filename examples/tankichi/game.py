@@ -28,8 +28,11 @@ class AbstractTank:
     MOVING = 5
     DESTROYED = 6
 
+    REGULAR_SPEED = 3
+
     def __init__(self, x, y, actor):
-        self.orientation = AbstractTank.UP
+        self.speed = AbstractTank.REGULAR_SPEED
+        self.direction = AbstractTank.UP
         self.state = AbstractTank.IDLE
         self.actor = actor
         actor.top_left = x, y
@@ -65,6 +68,14 @@ for row in range(tile_rows):
 player = PlayerTank(40, 40, Actor('tank'))
 
 
+state_keymap = {
+    keys.W: AbstractTank.UP,
+    keys.A: AbstractTank.LEFT,
+    keys.S: AbstractTank.DOWN,
+    keys.D: AbstractTank.RIGHT
+}
+
+
 
 def draw():
     for i, y in enumerate(range(0, HEIGHT, tile_size)):
@@ -72,4 +83,34 @@ def draw():
             tilemap[i][j](x, y)
 
     player.draw()
+
+
+def update():
+    if player.state == AbstractTank.MOVING:
+        if player.direction == AbstractTank.UP:
+            player.actor.top -= player.speed
+        elif player.direction == AbstractTank.DOWN:
+            player.actor.top += player.speed
+        elif player.direction == AbstractTank.LEFT:
+            player.actor.right -= player.speed
+        elif player.direction == AbstractTank.RIGHT:
+            player.actor.right += player.speed
+
+
+def on_key_down(key):
+    if key == keys.A:
+        player.direction = AbstractTank.LEFT
+    elif key == keys.D:
+        player.direction = AbstractTank.RIGHT
+    elif key == keys.W:
+        player.direction = AbstractTank.UP
+    elif key == keys.S:
+        player.direction = AbstractTank.DOWN
+    else:
+        return
+    player.state = AbstractTank.MOVING
+
+def on_key_up(key):
+    if state_keymap[key] == player.state:
+        player.state = AbstractTank.IDLE
 
